@@ -18,15 +18,15 @@ Use the `with-fake-http` macro to fake some HTTP responses.
 (with-fake-http {"http://google.com/" "faked"
                  "http://facebook.com/" 500
                  {:url "http://foo.co/" :method :post} {:status 201 :body "ok"}
-                 #"https?://localhost/" "ok"}
+                 #"https?://localhost/" :allow}
 
   (:body @(http/get "http://google.com/"))      ; "faked"
   (:status @(http/post "http://google.com/"))   ; 200
   (:status @(http/post "http://facebook.com/")) ; 500
   (:status @(http/post "http://foo.co/"))       ; 201
   (:body @(http/post "http://foo.co/"))         ; "ok"
-  (:body @(http/get "http://localhost/x"))      ; "ok"
-  (:body @(http/get "https://localhost/y"))     ; "ok"
+  (:body @(http/get "http://localhost/x"))      ; "the real response"
+  (:body @(http/get "https://localhost/y"))     ; "the real response"
   (http/put "http://foo.co/"))                  ; IllegalArgumentException
 ```
 
@@ -41,17 +41,8 @@ For simplicity, you may specify just a URL to match on, and/or just a body or
 status code to reply with. Regexes are supported everywhere and will be
 applied to the respective values in the request.
 
-## TODO
-
-I want to refactor this implementation so each match is built as a function
-that either returns nil, or processes the request. Then I want to allow
-predicates to be used in `with-fake-http` and lambdas to be used in the
-responses, thereby allowing for constructs such as:
-
-``` clojure
-(with-fake-http {#"^https?://localhost" :allow}
-  (http/get "http://localhost/foo")) ; request actually sent
-```
+If the response is the keyword `:allow`, the request will be sent without being
+blocked. This is useful when you need to whitelist certain URLs.
 
 ## License
 

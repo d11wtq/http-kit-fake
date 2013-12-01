@@ -51,7 +51,8 @@
                                  :server "faked"}}
                       res)
     (string? res) (recur {:body res})
-    (integer? res) (recur {:status res})))
+    (integer? res) (recur {:status res})
+    (= :allow res) res))
 
 (defn- normalize-routes
   [routes]
@@ -65,8 +66,11 @@
   (let [routes (normalize-routes routes)]
     (fn [f req callback]
       (let [pred? #(matches? % req)
-            match (first (filter pred? (keys routes)))]
-        (if match
-          (future ((or callback identity)
-                   (merge req (routes match))))
-          (handle-unmatched req))))))
+            match (first (filter pred? (keys routes)))
+            response (routes match)]
+        (cond
+          (nil? response) (handle-unmatched req)
+          (= :allow response) (f req callback)
+          true (future ((or callback identity)
+                        (merge {:opts req}
+                               response))))))))

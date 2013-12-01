@@ -1,5 +1,6 @@
 (ns org.httpkit.fake-test
   (:use org.httpkit.fake
+        robert.hooke
         clojure.test)
   (:require [org.httpkit.client :as http]))
 
@@ -95,4 +96,16 @@
 
         (testing "disallows non-matching urls"
           (is (thrown? IllegalArgumentException
-                       (http/get "http://bar.co/"))))))))
+                       (http/get "http://bar.co/"))))))
+
+    (testing "allowing specific urls"
+      (with-scope
+        (with-fake-http {"http://foo.co/" :allow}
+
+          (add-hook #'org.httpkit.client/request
+                    (fn [f opts cb] (future {:received-with opts})))
+
+          (testing "proxies through to #'org.httpkit.client/request"
+            (is (= "http://foo.co/"
+                   (:url
+                     (:received-with @(http/get "http://foo.co/")))))))))))
