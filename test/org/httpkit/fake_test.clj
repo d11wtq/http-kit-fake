@@ -98,6 +98,16 @@
           (is (thrown? IllegalArgumentException
                        (http/get "http://bar.co/"))))))
 
+    (testing "with decreasing specificity"
+      (with-fake-http {{:url "http://google.com/" :method :post} "posted"
+                       #".*" "wildcard"}
+
+        (testing "uses the first match"
+          (is (= "posted"
+                 (:body @(http/post "http://google.com/"))))
+          (is (= "wildcard"
+                 (:body @(http/post "http://other.com/")))))))
+
     (testing "allowing specific urls"
       (with-scope
         (with-fake-http {"http://foo.co/" :allow}

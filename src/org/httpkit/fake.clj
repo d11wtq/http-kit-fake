@@ -63,9 +63,9 @@
 
 (defn build-handlers
   [spec]
-  (concat
-    (map #(apply handler %) spec)
-    [handle-unmatched]))
+  (reverse
+    (conj (map #(apply handler %) spec)
+          handle-unmatched)))
 
 (defn stub-request
   [spec]
