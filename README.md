@@ -3,7 +3,7 @@
 A Clojure library for stubbing out calls to the http-kit client in tests.
 
 ``` clojure
-[http-kit/fake "0.1.0"]
+[http-kit.fake "0.1.0"]
 ```
 
 ## Usage
