@@ -1,5 +1,5 @@
 (ns org.httpkit.fake
-  "Library to fake HTTP traffic with org.http-kit.client."
+  "Library to fake HTTP traffic with org.httpkit.client."
   (:use [robert.hooke :only [with-scope add-hook]])
   (:require org.httpkit.client))
 
@@ -8,6 +8,10 @@
   (instance? java.util.regex.Pattern obj))
 
 (defn handle-unmatched
+  "The default handler function that is applied in the case a request sent to
+  #'org.httpkit.client/request is not matched by any other handlers.
+
+  This function simply throws an IllegalArgumentException."
   [orig-fn req callback]
   (throw (IllegalArgumentException.
            (str "Attempted to perform "
@@ -17,6 +21,10 @@
                 " and real HTTP requests are disabled."))))
 
 (defn response-map
+  "Build the response data based on the request data and the spec used in
+  `with-fake-http`.
+
+  This function merges in some defaults."
   [opts res-spec]
   (merge
     {:opts opts
@@ -29,6 +37,11 @@
       :else res-spec)))
 
 (defn responder
+  "Returns a lambda that is applied in order to provide a response to a matched
+  request.
+
+  The lambda returned by this function does not check if the request was
+  matched or not; it simply returns a response."
   [res-spec]
   (if (fn? res-spec)
     res-spec
@@ -40,6 +53,8 @@
                  (response-map opts res-spec)))))))
 
 (defn matches?
+  "Compares a request spec from `with-fake-http` against an actual request sent
+  to #'org.httpkit.client/request and returns true if they match."
   [req-spec sent-opts]
   (every? (fn [[k v]]
             (if (regex? v)
@@ -48,6 +63,8 @@
           req-spec))
 
 (defn predicate
+  "Returns a lambda used to test if a request sent to
+  #'org.httpkit.client/request matches the spec in `with-fake-http`."
   [req-spec]
   (if (fn? req-spec)
     req-spec
@@ -55,6 +72,11 @@
       #(matches? to-match %))))
 
 (defn handler
+  "Returns a lambda that either handles a request sent to
+  #'org.httpkit.client/request, or returns nil.
+
+  This is simply a combination of the predicate and the responder, wrapped in
+  a lambda."
   [req res]
   (let [handled? (predicate req)
         responder (responder res)]
@@ -63,12 +85,19 @@
         (responder orig-fn opts callback)))))
 
 (defn build-handlers
+  "Converts the spec given to `with-fake-http` into a list of handler functions.
+
+  During a request sent to #'org.httpkit.client/request, each handler function
+  will be applied in order until one returns non-nil, otherwise
+  `handle-unmatched` is applied, as it is the last handler function in this
+  list."
   [spec]
   (reverse
     (conj (map #(apply handler %) spec)
           handle-unmatched)))
 
 (defn stub-request
+  "Returns a function that provides a hook to #'org.httpkit.client/request."
   [spec]
   (let [handlers (build-handlers spec)]
     (fn [orig-fn opts callback]
