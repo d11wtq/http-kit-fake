@@ -82,4 +82,17 @@
 
         (testing "disallows other methods"
           (is (thrown? IllegalArgumentException
-                       (http/put "http://google.com/"))))))))
+                       (http/put "http://google.com/"))))))
+
+    (testing "with a regex"
+      (with-fake-http {#"^https?://foo\.co/" "ok"}
+
+        (testing "matches according to the regex"
+          (is (= "ok"
+                 (:body @(http/get "https://foo.co/jim"))))
+          (is (= "ok"
+                 (:body @(http/get "http://foo.co/bob")))))
+
+        (testing "disallows non-matching urls"
+          (is (thrown? IllegalArgumentException
+                       (http/get "http://bar.co/"))))))))

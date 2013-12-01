@@ -3,7 +3,22 @@
   (:use [robert.hooke :only [with-scope add-hook]])
   (:require org.httpkit.client))
 
-;; FIXME: Refactor to use strategy pattern
+(defmacro with-fake-http
+  "Define a series of routes to be faked in matching calls to
+  org.httpkit.client/request.
+
+  The routes argument is a Map whose keys contain a subset of the request that
+  must be matched and whose values are the responses to be returned. If the
+  key is a String, it will be used as a match on the :url alone.
+
+  If found, the first matching fake request is used to return a response,
+  otherwise an IllegalArgumentException is thrown and the request is
+  disallowed."
+  [routes & body]
+  `(with-scope
+      (add-hook #'org.httpkit.client/request
+                (fake-request ~routes))
+      ~@body))
 
 (defn- handle-unmatched
   [req]
@@ -16,7 +31,11 @@
 
 (defn- matches?
   [fake sent]
-  (every? (fn [[k v]] (= (sent k) v)) fake))
+  (every? (fn [[k v]]
+            (if (= java.util.regex.Pattern (class v))
+              (re-find v (sent k))
+              (= v (sent k))))
+          fake))
 
 (defn- normalize-request
   [req]
@@ -51,20 +70,3 @@
           (future ((or callback identity)
                    (merge req (routes match))))
           (handle-unmatched req))))))
-
-(defmacro with-fake-http
-  "Define a series of routes to be faked in matching calls to
-  org.httpkit.client/request.
-
-  The routes argument is a Map whose keys contain a subset of the request that
-  must be matched and whose values are the responses to be returned. If the
-  key is a String, it will be used as a match on the :url alone.
-
-  If found, the first matching fake request is used to return a response,
-  otherwise an IllegalArgumentException is thrown and the request is
-  disallowed."
-  [routes & body]
-  `(with-scope
-      (add-hook #'org.httpkit.client/request
-                (fake-request ~routes))
-      ~@body))
