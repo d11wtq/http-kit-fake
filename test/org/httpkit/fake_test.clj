@@ -108,6 +108,14 @@
           (is (= "long"
                  (:body @(http/post "http://not-very-short.com/")))))))
 
+    (testing "with a handler function"
+      (with-fake-http {"http://google.com/" (fn [orig-fn opts callback]
+                                              (future {:status 418}))}
+
+        (testing "invokes the handler"
+          (is (= 418
+                 (:status @(http/get "http://google.com/")))))))
+
     (testing "with decreasing specificity"
       (with-fake-http {{:url "http://google.com/" :method :post} "posted"
                        #".*" "wildcard"}
