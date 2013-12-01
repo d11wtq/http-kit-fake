@@ -3,18 +3,12 @@
 A Clojure library for stubbing out calls to the http-kit client in tests.
 
 ``` clojure
-["http-kit/fake" "0.1.0"]
+[http-kit/fake "0.1.0"]
 ```
 
 ## Usage
 
-Add the following to your dependencies in your project.clj:
-
-``` clojure
-[http-kit/fake "0.1.0"]
-```
-
-Then use the `with-fake-http` macro to fake some HTTP responses.
+Use the `with-fake-http` macro to fake some HTTP responses.
 
 ``` clojure
 (ns your.app
