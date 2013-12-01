@@ -9,7 +9,7 @@
     (testing "with empty routes"
       (with-fake-http {}
 
-        (testing "raises IllegalArgumentException on request"
+        (testing "throws IllegalArgumentException on request"
           (is (thrown? IllegalArgumentException
                        (http/get "http://google.com/"))))))
 
@@ -98,6 +98,16 @@
           (is (thrown? IllegalArgumentException
                        (http/get "http://bar.co/"))))))
 
+    (testing "with a function predicate"
+      (with-fake-http {#(< (count (% :url)) 20) "short"
+                       #(>= (count (% :url)) 20) "long"}
+
+        (testing "tests the predicate"
+          (is (= "short"
+                 (:body @(http/post "http://a.co/"))))
+          (is (= "long"
+                 (:body @(http/post "http://not-very-short.com/")))))))
+
     (testing "with decreasing specificity"
       (with-fake-http {{:url "http://google.com/" :method :post} "posted"
                        #".*" "wildcard"}
@@ -118,4 +128,16 @@
           (testing "proxies through to #'org.httpkit.client/request"
             (is (= "http://foo.co/"
                    (:url
-                     (:received-with @(http/get "http://foo.co/")))))))))))
+                     (:received-with @(http/get "http://foo.co/")))))))))
+
+    (testing "denying specific urls"
+      (with-fake-http {"http://foo.co/" :deny
+                       "http://bar.co/" "ok"}
+
+        (testing "throws IllegalArgumentException on request"
+          (is (thrown? IllegalArgumentException
+                       (http/get "http://foo.co/"))))
+
+        (testing "allows matched urls"
+          (is (= "ok"
+                 (:body @(http/get "http://bar.co/")))))))))

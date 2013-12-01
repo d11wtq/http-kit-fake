@@ -33,8 +33,9 @@
   (if (fn? res-spec)
     res-spec
     (fn [orig-fn opts callback]
-      (if (= :allow res-spec)
-        (orig-fn opts callback)
+      (case res-spec
+        :allow (orig-fn opts callback)
+        :deny (handle-unmatched orig-fn opts callback)
         (future ((or callback identity)
                  (response-map opts res-spec)))))))
 
