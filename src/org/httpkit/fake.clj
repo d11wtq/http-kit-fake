@@ -72,7 +72,10 @@
   [spec]
   (let [handlers (build-handlers spec)]
     (fn [orig-fn opts callback]
-      (first (keep identity (map #(% orig-fn opts callback) handlers))))))
+      (->> handlers
+           (map #(% orig-fn opts callback))
+           (keep identity)
+           (first)))))
 
 (defmacro with-fake-http
   "Define a series of routes to be faked in matching calls to
