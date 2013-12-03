@@ -28,7 +28,7 @@ Use the `with-fake-http` macro to fake some HTTP responses.
 ;; matching a specific request method
 (with-fake-http [{:url "http://foo.co/" :method :post} {:status 201 :body "ok"}]
   (:status @(http/post "http://foo.co/"))  ; 201
-  (:status @(http/get  "http://foo.co/"))) ; IllegalArgumentException (blocked)
+  (http/get  "http://foo.co/"))            ; IllegalArgumentException (blocked)
 
 ;; using a regex on the URL
 (with-fake-http [#"^https?://google.com/" "ok"]
