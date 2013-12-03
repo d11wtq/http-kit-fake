@@ -3,7 +3,7 @@
 A Clojure library for stubbing out calls to the http-kit client in tests.
 
 ``` clojure
-[http-kit.fake "0.1.0"]
+[http-kit.fake "0.2.0"]
 ```
 
 ## Usage
@@ -15,21 +15,35 @@ Use the `with-fake-http` macro to fake some HTTP responses.
   (:use org.httpkit.fake)
   (:require [org.httpkit.client :as http]))
 
-(with-fake-http ["http://google.com/" "faked"
-                 "http://flickr.com/" 500
-                 {:url "http://foo.co/" :method :post} {:status 201 :body "ok"}
-                 {:url #"https?://localhost/" :method :post} :deny
-                 #"https?://localhost/" :allow]
+;; denying all http-traffic
+(with-fake-http []
+  (http/get "http://google.com/")) ; IllegalArgumentException (blocked)
 
-  (:body @(http/get "http://google.com/"))   ; "faked"
-  (:status @(http/get "http://google.com/")) ; 200
-  (:status @(http/get "http://flickr.com/")) ; 500
-  (:status @(http/post "http://foo.co/"))    ; 201
-  (:body @(http/post "http://foo.co/"))      ; "ok"
-  (http/post "http://localhost/")            ; IllegalArgumentException (:deny)
-  (:body @(http/get "http://localhost/x"))   ; "the real response" (:allow)
-  (:body @(http/get "https://localhost/y"))  ; "the real response" (:allow)
-  (http/put "http://foo.co/"))               ; IllegalArgumentException
+;; simple requests and responses
+(with-fake-http ["http://google.com/" "faked"
+                 "http://flickr.com/" 500]
+  (:body @(http/get "http://google.com/"))    ; "faked"
+  (:status @(http/get "http://flickr.com/"))) ; 500
+
+;; matching a specific request method
+(with-fake-http [{:url "http://foo.co/" :method :post} {:status 201 :body "ok"}]
+  (:status @(http/post "http://foo.co/"))  ; 201
+  (:status @(http/get  "http://foo.co/"))) ; IllegalArgumentException (blocked)
+
+;; using a regex on the URL
+(with-fake-http [#"^https?://google.com/" "ok"]
+  (:body @(http/get "https://google.com/foo")) ; "ok"
+  (:body @(http/get "http://google.com/bar"))) ; "ok"
+
+;; allowing traffic on some URLs
+(with-fake-http [#"https?://localhost/" :allow]
+  (:body @(http/get "http://localhost/foo"))) ; <<some real response>> (:allow)
+
+;; explicitly denying traffic
+(with-fake-http [#"^http://localhost/unsafe" :deny
+                 #"^http://localhost/" :allow]
+  (:body @(http/get "http://localhost/foo")) ; <<some real response>> (:allow)
+  (http/get "http://localhost/unsafe"))      ; IllegalArgumentException (:deny)
 ```
 
 The spec argument is a vector of key-value pairs—as in a let binding form—in
