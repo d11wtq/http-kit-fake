@@ -109,12 +109,17 @@
                  (:body @(http/post "http://not-very-short.com/")))))))
 
     (testing "with a handler function"
-      (with-fake-http ["http://google.com/" (fn [orig-fn opts callback]
-                                              (future {:status 418}))]
+      (testing "returning a map"
+        (with-fake-http ["http://google.com/" (fn [orig-fn opts callback]
+                                                {:status 418})]
 
-        (testing "invokes the handler"
-          (is (= 418
-                 (:status @(http/get "http://google.com/")))))))
+          (testing "returns a future"
+            (is (future? (http/get "http://google.com/")))
+
+            (testing "returns the map"
+              (is (= 418
+                     (:status @(http/get "http://google.com/")))))))))
+
 
     (testing "with decreasing specificity"
       (with-fake-http [{:url "http://google.com/" :method :post} "posted"
