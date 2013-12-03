@@ -85,16 +85,19 @@
         (responder orig-fn opts callback)))))
 
 (defn build-handlers
-  "Converts the spec given to `with-fake-http` into a list of handler functions.
+  "Converts the spec from `with-fake-http` into a list of handler functions.
 
   During a request sent to #'org.httpkit.client/request, each handler function
   will be applied in order until one returns non-nil, otherwise
   `handle-unmatched` is applied, as it is the last handler function in this
   list."
   [spec]
-  (reverse
-    (conj (map #(apply handler %) spec)
-          handle-unmatched)))
+  (if (= 0 (rem (count spec) 2))
+    (concat
+      (map #(apply handler %) (partition 2 spec))
+      [handle-unmatched])
+    (throw (IllegalArgumentException.
+             "Mismatched let forms in #'org.httpkit.fake/with-fake-http"))))
 
 (defn stub-request
   "Returns a function that provides a hook to #'org.httpkit.client/request."
@@ -108,12 +111,13 @@
 
 (defmacro with-fake-http
   "Define a series of routes to be faked in matching calls to
-  org.httpkit.client/request.
+  #'org.httpkit.client/request.
 
-  The spec argument is a Map whose keys contain a predicate for the request and
-  whose values are the responses to be returned.
+  The spec argument is a vector of key-value pairs—as in a let binding form—in
+  which the keys contain a predicate for the request and the values are the
+  responses to be returned.
 
-  The predicate keys in the Map may take one of the following forms:
+  The predicates may take one of the following forms:
 
     1. A function accepting a Map (request opts) and returning true on a match.
     2. A String, which must be an exact match on the URL.
@@ -121,7 +125,7 @@
     4. A Map, whose keys and values must match the same keys and values in the
        request. Values may be specified as Regexes.
 
-  The responses in the Map may take one of the following forms:
+  The responses may take one of the following forms:
 
     1. A function accepting the actual (unstubbed) #'org.httpkit.client/request
        fn, the request opts Map and a callback function as arguments. This must

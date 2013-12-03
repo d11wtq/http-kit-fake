@@ -7,7 +7,7 @@
 (deftest fake-test
   (testing "org.httpkit.fake/with-fake-http"
     (testing "with empty routes"
-      (with-fake-http {}
+      (with-fake-http []
 
         (testing "throws IllegalArgumentException on request"
           (is (thrown? IllegalArgumentException
@@ -15,7 +15,7 @@
 
     (testing "with a faked url"
       (testing "using a response string"
-        (with-fake-http {"http://google.com/" "faked"}
+        (with-fake-http ["http://google.com/" "faked"]
 
           (testing "uses the response as the body"
             (is (= "faked"
@@ -35,7 +35,7 @@
                          (http/get "http://foo.co/"))))))
 
       (testing "using a response code"
-        (with-fake-http {"http://google.com/" 404}
+        (with-fake-http ["http://google.com/" 404]
 
           (testing "uses the response as the status"
             (is (= 404
@@ -47,8 +47,8 @@
                      (:headers @(http/get "http://google.com/")))))))))
 
     (testing "with multiple faked urls"
-      (with-fake-http {"http://google.com/" "google"
-                       "http://facebook.com/" "facebook"}
+      (with-fake-http ["http://google.com/" "google"
+                       "http://facebook.com/" "facebook"]
 
         (testing "selects the matching url"
           (is (= "google"
@@ -61,7 +61,7 @@
                        (http/get "http://foo.co/"))))))
 
     (testing "without a request method"
-      (with-fake-http {"http://google.com/" "faked"}
+      (with-fake-http ["http://google.com/" "faked"]
 
         (testing "allows all methods"
           (is (= "faked"
@@ -72,8 +72,8 @@
                  (:body @(http/put "http://google.com/")))))))
 
     (testing "with a request method"
-      (with-fake-http {{:url "http://google.com/" :method :get} "fetched"
-                       {:url "http://google.com/" :method :post} "posted"}
+      (with-fake-http [{:url "http://google.com/" :method :get} "fetched"
+                       {:url "http://google.com/" :method :post} "posted"]
 
         (testing "matches based on the method"
           (is (= "fetched"
@@ -86,7 +86,7 @@
                        (http/put "http://google.com/"))))))
 
     (testing "with a regex"
-      (with-fake-http {#"^https?://foo\.co/" "ok"}
+      (with-fake-http [#"^https?://foo\.co/" "ok"]
 
         (testing "matches according to the regex"
           (is (= "ok"
@@ -99,8 +99,8 @@
                        (http/get "http://bar.co/"))))))
 
     (testing "with a function predicate"
-      (with-fake-http {#(< (count (% :url)) 20) "short"
-                       #(>= (count (% :url)) 20) "long"}
+      (with-fake-http [#(< (count (% :url)) 20) "short"
+                       #(>= (count (% :url)) 20) "long"]
 
         (testing "tests the predicate"
           (is (= "short"
@@ -109,16 +109,16 @@
                  (:body @(http/post "http://not-very-short.com/")))))))
 
     (testing "with a handler function"
-      (with-fake-http {"http://google.com/" (fn [orig-fn opts callback]
-                                              (future {:status 418}))}
+      (with-fake-http ["http://google.com/" (fn [orig-fn opts callback]
+                                              (future {:status 418}))]
 
         (testing "invokes the handler"
           (is (= 418
                  (:status @(http/get "http://google.com/")))))))
 
     (testing "with decreasing specificity"
-      (with-fake-http {{:url "http://google.com/" :method :post} "posted"
-                       #".*" "wildcard"}
+      (with-fake-http [{:url "http://google.com/" :method :post} "posted"
+                       #".*" "wildcard"]
 
         (testing "uses the first match"
           (is (= "posted"
@@ -128,7 +128,7 @@
 
     (testing "allowing specific urls"
       (with-scope
-        (with-fake-http {"http://foo.co/" :allow}
+        (with-fake-http ["http://foo.co/" :allow]
 
           (add-hook #'org.httpkit.client/request
                     (fn [f opts cb] (future {:received-with opts})))
@@ -139,8 +139,8 @@
                      (:received-with @(http/get "http://foo.co/")))))))))
 
     (testing "denying specific urls"
-      (with-fake-http {"http://foo.co/" :deny
-                       "http://bar.co/" "ok"}
+      (with-fake-http ["http://foo.co/" :deny
+                       "http://bar.co/" "ok"]
 
         (testing "throws IllegalArgumentException on request"
           (is (thrown? IllegalArgumentException

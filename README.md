@@ -15,27 +15,28 @@ Use the `with-fake-http` macro to fake some HTTP responses.
   (:use org.httpkit.fake)
   (:require [org.httpkit.client :as http]))
 
-(with-fake-http {"http://google.com/" "faked"
+(with-fake-http ["http://google.com/" "faked"
                  "http://flickr.com/" 500
                  {:url "http://foo.co/" :method :post} {:status 201 :body "ok"}
                  {:url #"https?://localhost/" :method :post} :deny
-                 #"https?://localhost/" :allow}
+                 #"https?://localhost/" :allow]
 
-  (:body @(http/get "http://google.com/"))    ; "faked"
-  (:status @(http/post "http://google.com/")) ; 200
-  (:status @(http/post "http://flickr.com/")) ; 500
-  (:status @(http/post "http://foo.co/"))     ; 201
-  (:body @(http/post "http://foo.co/"))       ; "ok"
-  (http/post "http://localhost/")             ; IllegalArgumentException (:deny)
-  (:body @(http/get "http://localhost/x"))    ; "the real response" (:allow)
-  (:body @(http/get "https://localhost/y"))   ; "the real response" (:allow)
-  (http/put "http://foo.co/"))                ; IllegalArgumentException
+  (:body @(http/get "http://google.com/"))   ; "faked"
+  (:status @(http/get "http://google.com/")) ; 200
+  (:status @(http/get "http://flickr.com/")) ; 500
+  (:status @(http/post "http://foo.co/"))    ; 201
+  (:body @(http/post "http://foo.co/"))      ; "ok"
+  (http/post "http://localhost/")            ; IllegalArgumentException (:deny)
+  (:body @(http/get "http://localhost/x"))   ; "the real response" (:allow)
+  (:body @(http/get "https://localhost/y"))  ; "the real response" (:allow)
+  (http/put "http://foo.co/"))               ; IllegalArgumentException
 ```
 
-The spec argument is a Map whose keys contain a predicate for the request and
-whose values are the responses to be returned.
+The spec argument is a vector of key-value pairs—as in a let binding form—in
+which the keys contain a predicate for the request and the values are the
+responses to be returned.
 
-The predicate keys in the Map may take one of the following forms:
+The predicates may take one of the following forms:
 
   1. A function accepting a Map (request opts) and returning true on a match.
   2. A String, which must be an exact match on the URL.
@@ -43,7 +44,7 @@ The predicate keys in the Map may take one of the following forms:
   4. A Map, whose keys and values must match the same keys and values in the
      request. Values may be specified as Regexes.
 
-The responses in the Map may take one of the following forms:
+The responses may take one of the following forms:
 
   1. A function accepting the actual (unstubbed) #'org.httpkit.client/request
      fn, the request opts Map and a callback function as arguments. This must
@@ -70,15 +71,15 @@ converted to handler functions. You may specify your own functions if you need
 to do advanced matching or handling of the request.
 
 ``` clojure
-(with-fake-http {#(< (count (% :url)) 20) (fn [orig-fn opts callback]
-                                            (future {:status 418}))}
+(with-fake-http [#(< (count (% :url)) 20) (fn [orig-fn opts callback]
+                                            (future {:status 418}))]
   (:status @(http/get "http://a.co/"))) ; 418
 ```
 
 Make sure to return a future or a promise, as per the http-kit API.
 
 If you want to pass the call along to http-kit, such as in the case of
-`:allow`, you can apply `(orig-fn opts callback)`, as the first argument is
+`:allow`, you can apply `(orig-fn opts callback)`, since the first argument is
 the unstubbed `#'org.httpkit.client/request` function.
 
 ## License
