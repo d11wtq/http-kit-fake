@@ -30,7 +30,7 @@
     {:opts opts
      :status 200
      :headers {:content-type "text/html"
-               :server "org.htpkit.fake"}}
+               :server "org.httpkit.fake"}}
     (cond
       (string? res-spec) {:body res-spec}
       (number? res-spec) {:status res-spec}
