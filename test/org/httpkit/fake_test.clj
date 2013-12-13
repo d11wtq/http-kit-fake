@@ -99,8 +99,8 @@
                        (http/get "http://bar.co/"))))))
 
     (testing "with a function predicate"
-      (with-fake-http [#(< (count (% :url)) 20) "short"
-                       #(>= (count (% :url)) 20) "long"]
+      (with-fake-http [#(< (count (:url %)) 20) "short"
+                       #(>= (count (:url %)) 20) "long"]
 
         (testing "tests the predicate"
           (is (= "short"
