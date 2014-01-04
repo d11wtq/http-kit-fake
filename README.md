@@ -63,8 +63,7 @@ The predicates may take one of the following forms:
 The responses may take one of the following forms:
 
   1. A function accepting the actual (unstubbed) `#'org.httpkit.client/request`
-     fn, the request opts Map and a callback function as arguments. This must
-     return a promise or a future, which when dereferenced returns a Map.
+     fn, the request opts Map and a callback function as arguments.
   2. A String, which is then used as the `:body` of the response.
   3. An Integer, which is then used as the `:status` of the response.
   4. A Map, which is used as the actual response Map, merged with some
