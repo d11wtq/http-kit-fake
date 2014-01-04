@@ -1,4 +1,4 @@
-(defproject http-kit.fake "0.2.0"
+(defproject http-kit.fake "0.2.1"
   :description "Fakes HTTP requests in http-kit for testing."
   :url "https://github.com/d11wtq/http-kit-fake"
   :license {:name "MIT License"
