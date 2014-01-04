@@ -116,9 +116,33 @@
           (testing "returns a future"
             (is (future? (http/get "http://google.com/")))
 
-            (testing "returns the map"
+            (testing "references the map"
               (is (= 418
-                     (:status @(http/get "http://google.com/")))))))))
+                     (:status @(http/get "http://google.com/"))))))))
+
+      (testing "returning an integer"
+        (with-fake-http ["http://google.com/" (fn [orig-fn opts callback] 418)]
+
+          (testing "returns a future"
+            (is (future? (http/get "http://google.com/")))
+
+            (testing "uses the integer as a status"
+              (is (= 418
+                     (:status @(http/get "http://google.com/"))))))))
+
+      (testing "returning an string"
+        (with-fake-http ["http://google.com/" (fn [orig-fn opts callback] "ok")]
+
+          (testing "returns a future"
+            (is (future? (http/get "http://google.com/")))
+
+            (testing "uses a 200 status"
+              (is (= 200
+                     (:status @(http/get "http://google.com/")))))
+
+            (testing "uses the string as a body"
+              (is (= "ok"
+                     (:body @(http/get "http://google.com/")))))))))
 
 
     (testing "with decreasing specificity"

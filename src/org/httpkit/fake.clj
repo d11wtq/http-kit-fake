@@ -7,6 +7,10 @@
   [obj]
   (instance? java.util.regex.Pattern obj))
 
+(defn deref?
+  [obj]
+  (instance? clojure.lang.IDeref obj))
+
 (defn handle-unmatched
   "The default handler function that is applied in the case a request sent to
   #'org.httpkit.client/request is not matched by any other handlers.
@@ -36,6 +40,16 @@
       (number? res-spec) {:status res-spec}
       :else res-spec)))
 
+(defn responder-wrapper
+  "Wraps the provided responder to add missing boilerplate code."
+  [responder]
+  (fn [orig-fn opts callback]
+    (let [res (responder orig-fn opts callback)]
+      (if (deref? res)
+        res
+        (future ((or callback identity)
+                 (response-map opts res)))))))
+
 (defn responder
   "Returns a lambda that is applied in order to provide a response to a matched
   request.
@@ -43,14 +57,14 @@
   The lambda returned by this function does not check if the request was
   matched or not; it simply returns a response."
   [res-spec]
-  (if (fn? res-spec)
-    res-spec
-    (fn [orig-fn opts callback]
-      (case res-spec
-        :allow (orig-fn opts callback)
-        :deny (handle-unmatched orig-fn opts callback)
-        (future ((or callback identity)
-                 (response-map opts res-spec)))))))
+  (responder-wrapper
+    (if (fn? res-spec)
+      res-spec
+      (fn [orig-fn opts callback]
+        (case res-spec
+          :allow (orig-fn opts callback)
+          :deny (handle-unmatched orig-fn opts callback)
+          res-spec)))))
 
 (defn matches?
   "Compares a request spec from `with-fake-http` against an actual request sent
