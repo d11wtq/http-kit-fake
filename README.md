@@ -5,7 +5,7 @@ A Clojure library for stubbing out calls to the http-kit client in tests.
 [![Build Status](https://secure.travis-ci.org/d11wtq/http-kit-fake.png?branch=master)](http://travis-ci.org/d11wtq/http-kit-fake)
 
 ``` clojure
-[http-kit.fake "0.2.0"]
+[http-kit.fake "0.2.1"]
 ```
 
 ## Usage
@@ -88,11 +88,24 @@ to do advanced matching or handling of the request.
 
 ``` clojure
 (with-fake-http [#(< (count (% :url)) 20) (fn [orig-fn opts callback]
-                                            (future {:status 418}))]
+                                            {:status 418})]
   (:status @(http/get "http://a.co/"))) ; 418
 ```
 
-Make sure to return a future or a promise, as per the http-kit API.
+If your callback returns a future (or any instance of `clojure.lang.IDeref`, no
+special treatment will be done on the return value and it is assumed your
+handler invokes the callback when needed. In all other cases, http-kit-fake
+completes the response as normal and additionally adds the necessary
+boilerplate to invoke the callback argument.
+
+An implementation returning a future should look like this:
+
+``` clojure
+(with-fake-http [#(< (count (% :url)) 20) (fn [orig-fn opts callback]
+                                            ((or callback identity)
+                                             {:status 418}))]
+  (:status @(http/get "http://a.co/"))) ; 418
+```
 
 If you want to pass the call along to http-kit, such as in the case of
 `:allow`, you can apply `(orig-fn opts callback)`, since the first argument is
