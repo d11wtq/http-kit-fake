@@ -101,8 +101,8 @@ An implementation returning a future should look like this:
 
 ``` clojure
 (with-fake-http [#(< (count (% :url)) 20) (fn [orig-fn opts callback]
-                                            ((or callback identity)
-                                             {:status 418}))]
+                                            (future ((or callback identity)
+                                                     {:status 418})))]
   (:status @(http/get "http://a.co/"))) ; 418
 ```
 
