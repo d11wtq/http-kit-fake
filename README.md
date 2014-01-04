@@ -88,8 +88,10 @@ to do advanced matching or handling of the request.
 
 ``` clojure
 (with-fake-http [#(< (count (% :url)) 20) (fn [orig-fn opts callback]
-                                            (future {:status 418}))]
-  (:status @(http/get "http://a.co/"))) ; 418
+                                            (future ((or callback identity)
+                                                     {:status 418})))]
+  (:status @(http/get "http://a.co/"))  ; 418
+  (:status @(http/get "http://a.co/" #(println %)))) ; nil
 ```
 
 Make sure to return a future or a promise, as per the http-kit API.

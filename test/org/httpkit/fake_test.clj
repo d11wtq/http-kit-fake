@@ -4,6 +4,11 @@
         clojure.test)
   (:require [org.httpkit.client :as http]))
 
+(defn get-via-callback [url]
+  (let [p (promise)]
+    (http/get url #(deliver p %))
+    (deref p 500 :no-callback-response)))
+
 (deftest fake-test
   (testing "org.httpkit.fake/with-fake-http"
     (testing "with empty routes"
@@ -110,11 +115,16 @@
 
     (testing "with a handler function"
       (with-fake-http ["http://google.com/" (fn [orig-fn opts callback]
-                                              (future {:status 418}))]
+                                              (future ((or callback identity)
+                                                       {:status 418})))]
 
         (testing "invokes the handler"
           (is (= 418
-                 (:status @(http/get "http://google.com/")))))))
+                 (:status @(http/get "http://google.com/")))))
+
+        (testing "invokes the handler with callback"
+          (is (= 418
+                 (:status (get-via-callback "http://google.com/")))))))
 
     (testing "with decreasing specificity"
       (with-fake-http [{:url "http://google.com/" :method :post} "posted"
