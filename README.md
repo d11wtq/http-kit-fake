@@ -46,6 +46,18 @@ Use the `with-fake-http` macro to fake some HTTP responses.
                  #"^http://localhost/" :allow]
   (http/get "http://localhost/foo")     ; <<some real response>> (:allow)
   (http/get "http://localhost/unsafe")) ; IllegalArgumentException (:deny)
+  
+;; using low-level http-kit/request method with older http-fake(<0.2.2)
+;; requires explicit callback function for workaround
+(with-fake-http ["http://foo.bar" "ok"]
+	(http/request {:url "http://foo.bar", :method :get}) (fn [resp] resp))
+	
+	
+;; newer versions work without explicit callback-function
+(with-fake-http ["http://foo.bar" "ok"]
+	(http/request {:url "http://foo.bar", :method :get}))
+	
+	
 ```
 
 The spec argument is a vector of key-value pairs—as in a let binding form—in

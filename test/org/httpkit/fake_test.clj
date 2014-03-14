@@ -177,4 +177,20 @@
 
         (testing "allows matched urls"
           (is (= "ok"
-                 (:body @(http/get "http://bar.co/")))))))))
+                 (:body @(http/get "http://bar.co/")))))))
+    
+    (testing "http-kit/request works correctly when callback-function is defined"
+      (with-fake-http ["http://foo.com/" "ok"]
+          (is (= "ok"
+                 (:body @(http/request {:url "http://foo.com/" :method :get}
+                                       (fn [req] req)))))))
+
+     (testing "http-kit/request works correctly without callback function. "
+      (with-fake-http ["http://foo.com/" "ok"]
+          (is (= "ok"
+                 (:body @(http/request {:url "http://foo.com/" :method :get}))))))
+
+ 
+
+  ;; end of test
+))
