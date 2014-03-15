@@ -181,16 +181,11 @@
     
     (testing "http-kit/request works correctly when callback-function is defined"
       (with-fake-http ["http://foo.com/" "ok"]
-          (is (= "ok"
-                 (:body @(http/request {:url "http://foo.com/" :method :get}
-                                       (fn [req] req)))))))
+        (is (= "ok"
+               (:body @(http/request {:url "http://foo.com/" :method :get}
+                                     (fn [req] req)))))))
 
-     (testing "http-kit/request works correctly without callback function. "
+    (testing "http-kit/request works correctly without callback function. "
       (with-fake-http ["http://foo.com/" "ok"]
-          (is (= "ok"
-                 (:body @(http/request {:url "http://foo.com/" :method :get}))))))
-
- 
-
-  ;; end of test
-))
+        (is (= "ok"
+               (:body @(http/request {:url "http://foo.com/" :method :get}))))))))
