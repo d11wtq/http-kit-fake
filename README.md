@@ -124,4 +124,4 @@ the unstubbed `#'org.httpkit.client/request` function.
 
 ## License
 
-Copyright © 2013 Chris Corbyn. See the LICENSE file for details.
+Copyright © 2013-2014 Chris Corbyn. See the LICENSE file for details.
