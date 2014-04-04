@@ -117,11 +117,11 @@
   "Returns a function that provides a hook to #'org.httpkit.client/request."
   [spec]
   (let [handlers (build-handlers spec)]
-    (fn [orig-fn opts callback]
+    (fn [orig-fn opts & callback]
       (->> handlers
-           (map #(% orig-fn opts callback))
-           (keep identity)
-           (first)))))
+            (map #(% orig-fn opts (first callback)))
+            (keep identity)
+            (first)))))
 
 (defmacro with-fake-http
   "Define a series of routes to be faked in matching calls to
