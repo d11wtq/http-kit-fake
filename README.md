@@ -50,12 +50,12 @@ Use the `with-fake-http` macro to fake some HTTP responses.
 ;; using low-level http-kit/request method with older http-fake(<0.2.2)
 ;; requires explicit callback function for workaround
 (with-fake-http ["http://foo.bar" "ok"]
-	(http/request {:url "http://foo.bar", :method :get}) (fn [resp] resp))
+  (http/request {:url "http://foo.bar", :method :get}) (fn [resp] resp))
 	
 	
 ;; newer versions work without explicit callback-function
 (with-fake-http ["http://foo.bar" "ok"]
-	(http/request {:url "http://foo.bar", :method :get}))
+  (http/request {:url "http://foo.bar", :method :get}))
 	
 	
 ```
