@@ -1,8 +1,9 @@
 (ns org.httpkit.fake-test
-  (:use org.httpkit.fake
-        robert.hooke
-        clojure.test)
-  (:require [org.httpkit.client :as http]))
+  (:use clojure.test
+        org.httpkit.fake
+        robert.hooke)
+  (:require [clojure.java.io :as io]
+            [org.httpkit.client :as http]))
 
 (deftest fake-test
   (testing "org.httpkit.fake/with-fake-http"
@@ -178,7 +179,7 @@
         (testing "allows matched urls"
           (is (= "ok"
                  (:body @(http/get "http://bar.co/")))))))
-    
+
     (testing "http-kit/request works correctly when callback-function is defined"
       (with-fake-http ["http://foo.com/" "ok"]
         (is (= "ok"
@@ -188,4 +189,24 @@
     (testing "http-kit/request works correctly without callback function. "
       (with-fake-http ["http://foo.com/" "ok"]
         (is (= "ok"
-               (:body @(http/request {:url "http://foo.com/" :method :get}))))))))
+               (:body @(http/request {:url "http://foo.com/" :method :get}))))))
+
+    (testing "using :as :auto doesn't break anything"
+       (with-fake-http ["http://foo.com/" "ok"]
+         (is (= "ok"
+                (:body @(http/request {:url "http://foo.com/" :method :get :as :auto}))))))
+
+    (testing "each combination of inputs and coercions provides the right thing"
+      (doseq [[typ value-fn] {:text (constantly "hello")
+                              :byte-array #(.getBytes "hello")
+                              :stream #(io/input-stream (.getBytes "hello"))}
+              [as expected-type] {:text String
+                                  :stream java.io.InputStream
+                                  :byte-array (Class/forName "[B")}]
+
+        (testing (str typ "->" as)
+          (with-fake-http ["http://foo.com/" (fn [_ _ _] {:body (value-fn)})]
+            (let [r @(http/request {:method :get :url "http://foo.com/" :as as})]
+                 (is (instance? expected-type (:body r)))
+                 (is (= "hello"
+                        (:body (org.httpkit.fake/coerce-body r {:as :text})))))))))))

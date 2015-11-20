@@ -1,7 +1,8 @@
 (ns org.httpkit.fake
   "Library to fake HTTP traffic with org.httpkit.client."
   (:use [robert.hooke :only [with-scope add-hook]])
-  (:require org.httpkit.client))
+  (:require org.httpkit.client
+            [clojure.java.io :as io]))
 
 (defn regex?
   [obj]
@@ -10,6 +11,27 @@
 (defn deref?
   [obj]
   (instance? clojure.lang.IDeref obj))
+
+(defn coerce-body
+  "Coerce the body into the type specified by `(:as opts)`, one of :stream, :byte-array,
+  :text (:auto is not supported). See
+  http://www.http-kit.org/client.html#coercion for more."
+  [resp opts]
+  (if-let [typ (:as opts)]
+    (assoc resp :body
+      (let [body (:body resp)
+            streamed (io/input-stream (cond
+                                        (nil? body) (byte-array 0)
+                                        (instance? String body) (.getBytes body)
+                                        :else body))]
+        (case typ
+          :stream streamed
+          :byte-array  (with-open [out (java.io.ByteArrayOutputStream.)]
+                        (io/copy streamed out)
+                        (.toByteArray out))
+          :text (slurp streamed)
+          body)))
+    resp))
 
 (defn handle-unmatched
   "The default handler function that is applied in the case a request sent to
@@ -30,15 +52,17 @@
 
   This function merges in some defaults."
   [opts res-spec]
-  (merge
-    {:opts opts
-     :status 200
-     :headers {:content-type "text/html"
-               :server "org.httpkit.fake"}}
-    (cond
-      (string? res-spec) {:body res-spec}
-      (number? res-spec) {:status res-spec}
-      :else res-spec)))
+  (->
+    (merge
+      {:opts opts
+      :status 200
+      :headers {:content-type "text/html"
+                :server "org.httpkit.fake"}}
+      (cond
+        (string? res-spec) {:body res-spec}
+        (number? res-spec) {:status res-spec}
+        :else res-spec))
+    (coerce-body opts)))
 
 (defn responder-wrapper
   "Wraps the provided responder to add missing boilerplate code."
