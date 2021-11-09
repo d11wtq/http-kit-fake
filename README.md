@@ -5,7 +5,7 @@ A Clojure library for stubbing out calls to the http-kit client in tests.
 [![Build Status](https://secure.travis-ci.org/d11wtq/http-kit-fake.png?branch=master)](http://travis-ci.org/d11wtq/http-kit-fake)
 
 ``` clojure
-[http-kit.fake "0.2.1"]
+[http-kit.fake "0.2.2"]
 ```
 
 ## Usage
